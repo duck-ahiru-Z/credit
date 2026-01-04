@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luxury Card Generator v2.0</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --card-w: 360px;
+            --card-h: 228px;
+            --accent: #d4af37; /* Gold */
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: radial-gradient(circle at 50% 0%, #2a2a2a 0%, #050505 100%);
+            color: #e0e0e0;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* --- コントロールパネル --- */
+        .controls {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(15px);
+            padding: 25px 35px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            margin-bottom: 70px;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-end;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .input-group { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 180px; }
+        label { font-size: 0.75rem; color: #888; font-weight: 600; letter-spacing: 2px; }
+        
+        select {
+            padding: 12px 16px;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid #444;
+            color: #fff;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-family: 'Rajdhani', sans-serif;
+            cursor: pointer;
+            outline: none;
+            transition: 0.3s;
+        }
+        select:focus { border-color: var(--accent); box-shadow: 0 0 15px rgba(212, 175, 55, 0.2); }
+
+        button.btn-gen {
+            background: linear-gradient(135deg, #d4af37, #aa8828);
+            color: #000;
+            border: none;
+            padding: 14px 40px;
+            font-size: 1.1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 700;
+            letter-spacing: 2px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            height: 46px;
+            min-width: 160px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+        }
+        button.btn-gen:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 25px rgba(212, 175, 55, 0.4);
+            filter: brightness(1.1);
+        }
+        button.btn-gen:active { transform: scale(0.98); }
+
+        /* --- グリッド --- */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(var(--card-w), 1fr));
+            gap: 40px;
+            width: 100%;
+            max-width: 1600px;
+        }
+
+        /* --- カード本体 --- */
+        .card {
+            width: var(--card-w);
+            height: var(--card-h);
+            border-radius: 14px;
+            position: relative;
+            padding: 26px; 
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+            transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            overflow: hidden;
+            font-family: 'Share Tech Mono', monospace;
+            color: rgba(255,255,255,0.9);
+            box-shadow: 
+                inset 0 0 0 1px rgba(255,255,255,0.15),
+                inset 0 0 20px rgba(0,0,0,0.5),
+                0 20px 60px rgba(0,0,0,0.6);
+        }
+        
+        .card:hover {
+            transform: translateY(-10px) scale(1.02);
+            z-index: 10;
+            box-shadow: 
+                inset 0 0 0 1px var(--accent),
+                0 30px 80px rgba(0,0,0,0.8);
+        }
+
+        /* ヘアライン加工テクスチャ */
+        .card::before {
+            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                repeating-linear-gradient(90deg, 
+                    rgba(255,255,255,0) 0px, 
+                    rgba(255,255,255,0) 1px, 
+                    rgba(255,255,255,0.02) 1px, 
+                    rgba(255,255,255,0.02) 2px),
+                url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+            background-size: 100% 100%, 200px 200px;
+            pointer-events: none; z-index: 0; mix-blend-mode: overlay;
+        }
+
+        /* 光沢シマー */
+        .card::after {
+            content: ""; position: absolute; top: -100%; left: -100%; width: 300%; height: 300%;
+            background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.05) 45%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.05) 55%, transparent 60%);
+            pointer-events: none; mix-blend-mode: color-dodge;
+        }
+
+        .emboss { text-shadow: 0 1px 2px rgba(0,0,0,0.8); position: relative; z-index: 2; }
+
+        .card-top { display: flex; justify-content: space-between; align-items: flex-start; z-index: 2; }
+        .card-top-left { display: flex; flex-direction: column; }
+        
+        .card-type {
+            font-size: 0.65rem; color: var(--accent); letter-spacing: 2px; font-weight: 600; text-transform: uppercase;
+            margin-bottom: 8px; display: block;
+        }
+
+        .brand-logo {
+            font-size: 1.2rem; font-weight: 800; font-style: italic; text-transform: uppercase;
+            text-align: right; margin-left: 10px; word-break: break-word;
+            background: linear-gradient(to bottom, #fff 0%, #ccc 50%, #999 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            max-width: 180px;
+            line-height: 1.1;
+        }
+        .brand-logo.long-text { font-size: 0.85rem; }
+
+        .chip-container { display: flex; align-items: center; gap: 15px; z-index: 2; }
+        
+        .chip {
+            width: 48px; height: 34px;
+            background: linear-gradient(135deg, #b88a4d 0%, #e8c67c 50%, #b88a4d 100%);
+            border-radius: 6px; position: relative;
+            box-shadow: inset 0 1px 2px rgba(255,255,255,0.5), 0 2px 5px rgba(0,0,0,0.5);
+            border: 1px solid #8a6e3e;
+        }
+        .chip::before { content:''; position: absolute; left: 30%; top:0; width:40%; height:100%; border-left:1px solid rgba(0,0,0,0.15); border-right:1px solid rgba(0,0,0,0.15); }
+        .chip::after { content:''; position: absolute; top: 30%; left:0; width:100%; height:40%; border-top:1px solid rgba(0,0,0,0.15); border-bottom:1px solid rgba(0,0,0,0.15); }
+
+        .wifi { display: inline-block; width: 24px; height: 24px; transform: rotate(45deg); opacity: 0.8; }
+        .wifi span {
+            display: block; position: absolute; top: 0; left: 0;
+            border: 2px solid rgba(255,255,255,0.7); border-radius: 50%;
+            border-right-color: transparent; border-bottom-color: transparent;
+        }
+
+        .card-number {
+            font-size: 1.35rem; 
+            letter-spacing: 2px;
+            margin: 20px 0; z-index: 2;
+            display: flex; justify-content: space-between; align-items: center;
+            white-space: nowrap; overflow: hidden;
+            color: #e8e8e8;
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.8), -1px -1px 0 rgba(255,255,255,0.1);
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        .card-details { display: flex; justify-content: space-between; align-items: flex-end; z-index: 2; }
+        .detail-box { display: flex; flex-direction: column; gap: 3px; }
+        .detail-label { font-size: 0.5rem; color: #888; text-transform: uppercase; font-family: sans-serif; font-weight: 700; letter-spacing: 1px;}
+        .detail-val { font-size: 0.95rem; display: flex; align-items: center; gap: 8px; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); }
+
+        .cp-btn {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #888;
+            border-radius: 4px; width: 24px; height: 24px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: 0.2s; font-size: 0.7rem; flex-shrink: 0;
+        }
+        .cp-btn:hover { background: var(--accent); border-color: var(--accent); color: #000; box-shadow: 0 0 15px var(--accent); }
+
+        /* --- 高級マテリアルカラー --- */
+        .mat-black { background: linear-gradient(135deg, #1c1c1c 0%, #2a2a2a 100%); }
+        .mat-navy { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); }
+        .mat-centurion { background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%); } .mat-centurion::before { opacity: 0.08; }
+        .mat-gunmetal { background: linear-gradient(135deg, #434343 0%, #2b2b2b 100%); }
+        .mat-platinum { background: linear-gradient(135deg, #dce3e6 0%, #b0bec5 100%); color: #333; }
+        .mat-platinum .card-number { color: #222; text-shadow: 1px 1px 0 rgba(255,255,255,1); }
+        .mat-platinum .brand-logo { -webkit-text-fill-color: #333; background: none; }
+        .mat-platinum .wifi span { border-color: #333; }
+        .mat-platinum .detail-label { color: #555; }
+        .mat-platinum .card-type { color: #004d40; }
+        .mat-platinum .cp-btn { border-color: rgba(0,0,0,0.2); color: #555; }
+        .mat-platinum .cp-btn:hover { color: #fff; }
+        .mat-emerald { background: linear-gradient(135deg, #064e3b 0%, #065f46 100%); }
+
+        #toast {
+            visibility: hidden; background-color: var(--accent); color: #000;
+            font-weight: 800; text-align: center; border-radius: 4px; padding: 12px 40px;
+            position: fixed; bottom: 40px; z-index: 100; letter-spacing: 1px;
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.4);
+            transform: translateY(20px); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #toast.show { visibility: visible; opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body>
+
+<div class="controls">
+    <div class="input-group">
+        <label>SELECT BRAND</label>
+        <select id="brandSelect">
+            <option value="RANDOM">RANDOM (LUXURY MIX)</option>
+            <option value="AMERICAN EXPRESS">AMERICAN EXPRESS</option>
+            <option value="VISA">VISA</option>
+            <option value="MASTERCARD">MASTERCARD</option>
+            <option value="JCB">JCB</option>
+            <option value="DINERS CLUB INTERNATIONAL">DINERS CLUB</option>
+            <option value="UNIONPAY">UNIONPAY</option>
+            <option value="DISCOVER">DISCOVER</option>
+            <option value="MAESTRO">MAESTRO</option>
+            <option value="DANKORT">DANKORT (PLATINUM)</option>
+            <option value="MIR">MIR</option>
+            <option value="UZCARD">UZCARD</option>
+            <option value="HUMO">HUMO</option>
+        </select>
+    </div>
+    
+    <div class="input-group">
+        <label>CARD TYPE</label>
+        <select id="typeSelect">
+            <option value="RANDOM">RANDOM</option>
+            <option value="CREDIT">CREDIT</option>
+            <option value="DEBIT">DEBIT</option>
+        </select>
+    </div>
+
+    <div class="input-group">
+        <label>QUANTITY</label>
+        <select id="countSelect">
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+        </select>
+    </div>
+    <button class="btn-gen" onclick="render()">GENERATE</button>
+</div>
+
+<div class="grid" id="container"></div>
+<div id="toast">COPIED TO CLIPBOARD</div>
+
+<script>
+    const RULES = {
+        "VISA":         { p: ["4"], len: 16, style: "mat-navy", cvc: "CVV", clen: 3 },
+        "MASTERCARD":   { p: ["51","52","53","54","55"], len: 16, style: "mat-black", cvc: "CVC", clen: 3 },
+        "AMERICAN EXPRESS": { p: ["34","37"], len: 15, style: "mat-centurion", cvc: "CID", clen: 4 },
+        "UNIONPAY":     { p: ["62"], len: 16, style: "mat-gunmetal", cvc: "CVN", clen: 3 },
+        "DINERS CLUB INTERNATIONAL": { p: ["36","300","305","38"], len: 14, style: "mat-black", cvc: "CVV", clen: 3 },
+        "DISCOVER":     { p: ["6011","65"], len: 16, style: "mat-gunmetal", cvc: "CID", clen: 3 },
+        "JCB":          { p: ["3528","353","354","355"], len: 16, style: "mat-navy", cvc: "CVV", clen: 3 },
+        "MAESTRO":      { p: ["5018","5020","5038","6304"], len: 16, style: "mat-navy", cvc: "CVC", clen: 3 },
+        "DANKORT":      { p: ["5019"], len: 16, style: "mat-platinum", cvc: "CVC", clen: 3 },
+        "MIR":          { p: ["2200","2201","2202","2203","2204"], len: 16, style: "mat-emerald", cvc: "CVP2", clen: 3 },
+        "UZCARD":       { p: ["8600"], len: 16, style: "mat-emerald", cvc: "CVC", clen: 3 },
+        "HUMO":         { p: ["9860"], len: 16, style: "mat-platinum", cvc: "CVC", clen: 3 }
+    };
+
+    // 名前データベース：地域ごとに姓・名をグループ化
+    const NAME_DB = [
+        // 日本 (JP)
+        {
+            region: "JP",
+            first: ["TARO", "HANAKO", "KENJI", "YUKI", "HIROSHI", "NAOKI", "KAZUKI", "AYUMI", "SAKURA", "REN", "HARUTO"],
+            last: ["YAMADA", "SATO", "SUZUKI", "TANAKA", "ITO", "WATANABE", "YAMAMOTO", "NAKAMURA", "KOBAYASHI"]
+        },
+        // 英語圏 (EN)
+        {
+            region: "EN",
+            first: ["JAMES", "JOHN", "ROBERT", "MICHAEL", "WILLIAM", "DAVID", "RICHARD", "EMMA", "OLIVIA", "AVA", "LIAM", "NOAH"],
+            last: ["SMITH", "JOHNSON", "WILLIAMS", "BROWN", "JONES", "MILLER", "DAVIS", "GARCIA", "RODRIGUEZ", "WILSON"]
+        },
+        // 中国 (CN)
+        {
+            region: "CN",
+            first: ["WEI", "FANG", "XIUYING", "MIN", "JING", "LEI", "JUN", "YANG"],
+            last: ["LI", "WANG", "ZHANG", "LIU", "CHEN", "YANG", "ZHAO", "HUANG"]
+        },
+        // 韓国 (KR)
+        {
+            region: "KR",
+            first: ["MIN-JUN", "SEO-YUN", "JI-HO", "SEO-JUN", "HA-EUN", "DO-YUN"],
+            last: ["KIM", "LEE", "PARK", "CHOI", "JUNG", "KANG", "CHO"]
+        },
+        // ロシア (RU)
+        {
+            region: "RU",
+            first: ["IVAN", "OLGA", "DMITRY", "ANASTASIA", "ALEXANDER", "MARIA", "SERGEI"],
+            last: ["IVANOV", "PETROV", "SMIRNOV", "POPOVA", "SOKOLOV", "KUZNETSOV"]
+        },
+        // ウズベキスタン (UZ)
+        {
+            region: "UZ",
+            first: ["AZAMAT", "JASUR", "GULNARA", "DILNOZA", "SHERZOD", "FARHOD"],
+            last: ["KARIMOV", "ABDULLAEV", "YUSUPOV", "RAHIMOV", "NORMATOV"]
+        },
+        // ヨーロッパ/ドイツ (DE)
+        {
+            region: "DE",
+            first: ["HANS", "JOHAN", "CLARA", "ELENA", "THOMAS", "ANDREAS", "LUKAS"],
+            last: ["MULLER", "SCHMIDT", "SCHNEIDER", "FISCHER", "WEBER"]
+        },
+        // ヒスパニック (ES)
+        {
+            region: "ES",
+            first: ["MATEO", "LUCAS", "SOFIA", "CAMILA", "VALENTINA", "SANTIAGO"],
+            last: ["GONZALEZ", "RODRIGUEZ", "GOMEZ", "FERNANDEZ", "LOPEZ"]
+        }
+    ];
+
+    function getRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+    // 地域整合性のある名前生成関数
+    function generateName() {
+        // まず地域をランダムに選ぶ
+        const regionData = getRandom(NAME_DB);
+        const first = getRandom(regionData.first);
+        const last = getRandom(regionData.last);
+        return `${first} ${last}`;
+    }
+
+    function getFutureDate() {
+        const today = new Date();
+        const future = new Date(today.setMonth(today.getMonth() + 2 + Math.floor(Math.random() * 58)));
+        return String(future.getMonth()+1).padStart(2,'0') + '/' + String(future.getFullYear()).slice(-2);
+    }
+
+    function generateNum(brand) {
+        const r = RULES[brand];
+        const prefix = getRandom(r.p);
+        let num = prefix.split('').map(Number);
+        while(num.length < r.len - 1) num.push(Math.floor(Math.random()*10));
+        let sum = 0;
+        let rev = [...num].reverse();
+        rev.forEach((d, i) => {
+            if (i % 2 === 0) { d *= 2; if (d > 9) d -= 9; }
+            sum += d;
+        });
+        num.push((10 - (sum % 10)) % 10);
+        return num.join('');
+    }
+
+    function formatNum(num, brand) {
+        if(brand === "AMERICAN EXPRESS") return num.replace(/(\d{4})(\d{6})(\d{5})/, "$1 $2 $3");
+        if(brand === "DINERS CLUB INTERNATIONAL") return num.replace(/(\d{4})(\d{6})(\d{4})/, "$1 $2 $3");
+        return num.match(/.{1,4}/g).join(' ');
+    }
+
+    function render() {
+        const container = document.getElementById('container');
+        const reqBrand = document.getElementById('brandSelect').value;
+        const count = document.getElementById('countSelect').value;
+        const reqType = document.getElementById('typeSelect').value;
+        const brands = Object.keys(RULES);
+
+        container.innerHTML = "";
+
+        for(let i=0; i<count; i++) {
+            let brand = reqBrand === "RANDOM" ? getRandom(brands) : reqBrand;
+            let rule = RULES[brand];
+            let num = generateNum(brand);
+            // 地域整合性のある名前を生成
+            let name = generateName();
+            let exp = getFutureDate();
+            let cvc = ""; 
+            for(let k=0; k<rule.clen; k++) cvc += Math.floor(Math.random()*10);
+            
+            let typeText = reqType === "RANDOM" ? (Math.random() > 0.5 ? "CREDIT" : "DEBIT") : reqType;
+
+            let brandClass = "brand-logo";
+            if (brand.length > 15) brandClass += " long-text";
+
+            const html = `
+            <div class="card ${rule.style}">
+                <div class="card-top">
+                    <div class="card-top-left">
+                        <span class="card-type">${typeText}</span>
+                        <div class="chip-container">
+                            <div class="chip"></div>
+                            <div class="wifi">
+                                <span></span>
+                                <span style="width:14px;height:14px;top:-3px;left:-3px;"></span>
+                                <span style="width:8px;height:8px;top:0px;left:0px;background:currentColor;border:none;opacity:0.8;"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <span class="${brandClass}">${brand}</span>
+                </div>
+
+                <div class="card-number">
+                    <span>${formatNum(num, brand)}</span>
+                    <button class="cp-btn" onclick="copy('${num}')"><i class="fa-regular fa-copy"></i></button>
+                </div>
+
+                <div class="card-details">
+                    <div class="detail-box">
+                        <span class="detail-label">VALID THRU</span>
+                        <div class="detail-val emboss">${exp} <button class="cp-btn" onclick="copy('${exp}')"><i class="fa-regular fa-copy"></i></button></div>
+                    </div>
+                    <div class="detail-box">
+                        <span class="detail-label">${rule.cvc}</span>
+                        <div class="detail-val emboss">${cvc} <button class="cp-btn" onclick="copy('${cvc}')"><i class="fa-regular fa-copy"></i></button></div>
+                    </div>
+                    <div class="detail-box">
+                        <span class="detail-label">NAME</span>
+                        <div class="detail-val emboss" style="font-size:0.8rem; max-width:140px; overflow:hidden; white-space:nowrap;">
+                            ${name} <button class="cp-btn" onclick="copy('${name}')"><i class="fa-regular fa-copy"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            `;
+            container.innerHTML += html;
+        }
+    }
+
+    function copy(txt) {
+        navigator.clipboard.writeText(txt).then(() => {
+            const t = document.getElementById('toast');
+            t.className = "show";
+            setTimeout(() => t.className = "", 2000);
+        });
+    }
+
+    window.onload = render;
+</script>
+
+</body>
+</html>
